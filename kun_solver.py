@@ -112,9 +112,7 @@ class _KunSolutionIterator(Iterator):
             # Right side indexes start after left side
             r_side_index = self._workers_count + column
 
-            # Make graph non-oriented
             graph[l_side_index].add(r_side_index)
-            graph[r_side_index].add(l_side_index)
 
         return graph
 
