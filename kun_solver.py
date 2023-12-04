@@ -95,7 +95,13 @@ class _KunSolutionIterator(Iterator):
                 new_matching = _KunSolutionIterator.__build_matching(kun_frame.matching, path)
 
                 self._kun_stack.append(_KunStackFrame(next_vertex, new_matching))
+
+                # Remove this vertex from visited when dfs stack frame leaving
+                visited[neighbour_vertex] = False
             else:
+                # Remove this vertex from visited when dfs stack frame leaving
+                visited[dfs_frame.left_index] = False
+
                 # Remove dfs stack frame if all neighbours was viewed
                 _ = dfs_stack.pop()
 
