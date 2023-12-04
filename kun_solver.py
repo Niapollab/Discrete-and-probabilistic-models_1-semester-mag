@@ -89,6 +89,9 @@ class _KunSolutionIterator(Iterator):
                     # Remove unnecessary last added stack frame (for micro-optimization purposes)
                     _ = dfs_stack.pop()
 
+                    # Last dfs stack frame was popped and we need to check another neighbour in current frame
+                    continue
+
                 # New dfs stack frame was set, return to the dfs loop
                 break
 
