@@ -1,30 +1,30 @@
 from collections import defaultdict, deque
 from dataclasses import dataclass
 from matrix_utils import min_indexes, reduce_each_min
-from typing import Iterable, Iterator, Self
+from typing import Iterable, Iterator
 import numpy as np
 
 
 @dataclass(frozen=True, eq=True)
-class KunStackFrame:
+class _KunStackFrame:
     worker_index: int
     matching: np.ndarray
 
 
 @dataclass(frozen=True, eq=True)
-class DfsStackFrame:
+class _DfsStackFrame:
     vertex_index: int
     neighbours_iter: Iterator[int]
 
 
-class KunSolution(Iterable):
+class _KunSolutionIterator(Iterator):
     FIRST_VERTEX = 0
     NO_MATCHING = -1
 
     _workers_count: int
     _tasks_count: int
     _graph: dict[int, set[int]]
-    _kun_stack: deque[KunStackFrame]
+    _kun_stack: deque[_KunStackFrame]
 
     def __init__(self, matrix: np.ndarray) -> None:
         self._workers_count = matrix.shape[0]
@@ -35,11 +35,8 @@ class KunSolution(Iterable):
 
         self._graph = self.__build_bipartite_graph(matrix)
 
-        init_frame = KunStackFrame(KunSolution.FIRST_VERTEX, np.full(self._tasks_count, KunSolution.NO_MATCHING))
+        init_frame = _KunStackFrame(_KunSolutionIterator.FIRST_VERTEX, np.full(self._tasks_count, _KunSolutionIterator.NO_MATCHING))
         self._kun_stack = deque([init_frame])
-
-    def __iter__(self) -> Self:
-        return self
 
     def __next__(self) -> dict[int, int]:
         while self._kun_stack:
@@ -47,13 +44,13 @@ class KunSolution(Iterable):
 
             # Solution was found
             if frame.worker_index >= self._workers_count:
-                return KunSolution.__build_solution(frame.matching)
+                return _KunSolutionIterator.__build_solution(frame.matching)
 
             self.__process_frame(frame)
 
         raise StopIteration
 
-    def __process_frame(self, kun_frame: KunStackFrame) -> None:
+    def __process_frame(self, kun_frame: _KunStackFrame) -> None:
         no_way_needed = False
 
         vertex = kun_frame.worker_index
@@ -65,7 +62,7 @@ class KunSolution(Iterable):
         # Mark first vertrex as visited by default
         visited[vertex] = True
 
-        init_frame = DfsStackFrame(vertex, iter(self._graph[vertex]))
+        init_frame = _DfsStackFrame(vertex, iter(self._graph[vertex]))
         dfs_stack = deque([init_frame])
 
         while dfs_stack:
@@ -76,17 +73,17 @@ class KunSolution(Iterable):
                     continue
 
                 visited[neighbour_vertex] = True
-                dfs_stack.append(DfsStackFrame(neighbour_vertex, iter(self._graph[neighbour_vertex])))
+                dfs_stack.append(_DfsStackFrame(neighbour_vertex, iter(self._graph[neighbour_vertex])))
 
                 # If we found not matching vertex
-                if kun_frame.matching[neighbour_vertex] == KunSolution.NO_MATCHING:
+                if kun_frame.matching[neighbour_vertex] == _KunSolutionIterator.NO_MATCHING:
                     no_way_needed = True
 
                     # Dfs stack contains all path vertex at that moment
                     path = dfs_stack
-                    new_matching = KunSolution.__build_matching(kun_frame.matching, path)
+                    new_matching = _KunSolutionIterator.__build_matching(kun_frame.matching, path)
 
-                    self._kun_stack.append(KunStackFrame(next_vertex, new_matching))
+                    self._kun_stack.append(_KunStackFrame(next_vertex, new_matching))
 
                     # Remove unnecessary last added stack frame (for micro-optimization purposes)
                     _ = dfs_stack.pop()
@@ -96,7 +93,7 @@ class KunSolution(Iterable):
 
         # Add no way frame, if no kun frames was added previous
         if no_way_needed:
-            self._kun_stack.append(KunStackFrame(next_vertex, kun_frame.matching.copy()))
+            self._kun_stack.append(_KunStackFrame(next_vertex, kun_frame.matching.copy()))
 
     def __build_bipartite_graph(self, matrix: np.ndarray) -> dict[int, set[int]]:
         reduced_matrix = reduce_each_min(matrix)
@@ -119,5 +116,9 @@ class KunSolution(Iterable):
         raise NotImplementedError()
 
     @staticmethod
-    def __build_matching(matching: np.ndarray, path: deque[DfsStackFrame]) -> np.ndarray:
+    def __build_matching(matching: np.ndarray, path: deque[_DfsStackFrame]) -> np.ndarray:
         raise NotImplementedError()
+
+
+def enumerate_matchings(matrix: np.ndarray) -> Iterable[dict[int, int]]:
+    return _KunSolutionIterator(matrix)
