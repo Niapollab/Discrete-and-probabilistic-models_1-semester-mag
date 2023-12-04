@@ -118,7 +118,16 @@ class _KunSolutionIterator(Iterator):
 
     @staticmethod
     def __build_matching(matching: np.ndarray, path: Sequence[int]) -> np.ndarray:
-        raise NotImplementedError()
+        new_matching = matching.copy()
+
+        # Start building from the ending of path [path_length - 1:0)
+        for i in range(len(path) - 1, 0, -1):
+            from_vertex =  path[i - 1]
+            to_vertex = path[i]
+
+            new_matching[to_vertex] = from_vertex
+
+        return new_matching
 
 
 def enumerate_matchings(matrix: np.ndarray) -> Iterable[dict[int, int]]:
