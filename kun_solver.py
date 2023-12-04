@@ -13,8 +13,9 @@ class _KunStackFrame:
 
 @dataclass(frozen=True, eq=True)
 class _DfsStackFrame:
-    vertex_index: int
-    neighbours_iter: Iterator[int]
+    left_index: int
+    right_index: int
+    right_neighbours_iter: Iterator[int]
 
 
 class _KunSolutionIterator(Iterator):
@@ -54,36 +55,43 @@ class _KunSolutionIterator(Iterator):
     def __process_frame(self, kun_frame: _KunStackFrame) -> None:
         no_way_needed = True
 
-        vertex = kun_frame.worker_index
-        next_vertex = vertex + 1
+        init_vertex = kun_frame.worker_index
+        next_vertex = init_vertex + 1
 
         vertexes_count = kun_frame.matching.shape[0]
         visited = np.full(vertexes_count, False)
 
         # Mark first vertrex as visited by default
-        visited[vertex] = True
+        visited[init_vertex] = True
 
-        init_frame = _DfsStackFrame(vertex, iter(self._graph[vertex]))
+        init_frame = _DfsStackFrame(init_vertex, _KunSolutionIterator.NO_MATCHING, iter(self._graph[init_vertex]))
         dfs_stack = deque([init_frame])
 
         while dfs_stack:
             dfs_frame = dfs_stack[-1]
 
-            for neighbour_vertex in dfs_frame.neighbours_iter:
+            for neighbour_vertex in dfs_frame.right_neighbours_iter:
                 if visited[neighbour_vertex]:
                     continue
 
+                # Select next vertex (from left side) for dfs continuation
+                left_index = kun_frame.matching[neighbour_vertex]
+                right_index = neighbour_vertex
+
                 visited[neighbour_vertex] = True
-                if kun_frame.matching[neighbour_vertex] != _KunSolutionIterator.NO_MATCHING:
+                if left_index != _KunSolutionIterator.NO_MATCHING:
+                    # Enumerate neighbours for left-side vertex (all neighbours will be right-sided)
+                    right_neighbours_iter = iter(self._graph[left_index])
+
                     # Set new dfs stack frame and return to the dfs loop
-                    dfs_stack.append(_DfsStackFrame(neighbour_vertex, iter(self._graph[neighbour_vertex])))
+                    dfs_stack.append(_DfsStackFrame(left_index, right_index, right_neighbours_iter))
                     break
 
                 # We found not matching vertex
                 no_way_needed = False
 
                 # Dfs stack contains all path vertex at that moment
-                path = [*(frame.vertex_index for frame in dfs_stack), neighbour_vertex]
+                path = [*((frame.left_index, frame.right_index) for frame in dfs_stack), (left_index, right_index)]
                 new_matching = _KunSolutionIterator.__build_matching(kun_frame.matching, path)
 
                 self._kun_stack.append(_KunStackFrame(next_vertex, new_matching))
@@ -114,13 +122,13 @@ class _KunSolutionIterator(Iterator):
         raise NotImplementedError()
 
     @staticmethod
-    def __build_matching(matching: np.ndarray, path: Sequence[int]) -> np.ndarray:
+    def __build_matching(matching: np.ndarray, path: Sequence[tuple[int, int]]) -> np.ndarray:
         new_matching = matching.copy()
 
         # Start building from the ending of path [path_length - 1:0)
         for i in range(len(path) - 1, 0, -1):
-            from_vertex =  path[i - 1]
-            to_vertex = path[i]
+            from_vertex, _ =  path[i - 1]
+            _, to_vertex = path[i]
 
             new_matching[to_vertex] = from_vertex
 
