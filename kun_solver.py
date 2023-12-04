@@ -46,7 +46,7 @@ class _KunSolutionIterator(Iterator):
 
             # Solution was found
             if frame.worker_index >= self._workers_count:
-                return _KunSolutionIterator.__build_solution(frame.matching)
+                return self.__build_solution(frame.matching)
 
             self.__process_frame(frame)
 
@@ -117,9 +117,18 @@ class _KunSolutionIterator(Iterator):
 
         return graph
 
-    @staticmethod
-    def __build_solution(matching: np.ndarray) -> dict[int, int]:
-        raise NotImplementedError()
+    def __build_solution(self, matching: np.ndarray) -> dict[int, int]:
+        vertexes_count = self._workers_count + self._tasks_count
+
+        # Answer start from self._workers_count in matching
+        answer = {}
+        for i in range(self._workers_count, vertexes_count):
+            left_index = matching[i]
+            right_index = i - self._workers_count
+
+            answer[left_index] = right_index
+
+        return answer
 
     @staticmethod
     def __build_matching(matching: np.ndarray, path: Sequence[tuple[int, int]]) -> np.ndarray:
