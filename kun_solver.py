@@ -35,7 +35,8 @@ class _KunSolutionIterator(Iterator):
 
         self._graph = self.__build_bipartite_graph(matrix)
 
-        init_frame = _KunStackFrame(_KunSolutionIterator.FIRST_VERTEX, np.full(self._tasks_count, _KunSolutionIterator.NO_MATCHING))
+        vertexes_count = self._workers_count + self._tasks_count
+        init_frame = _KunStackFrame(_KunSolutionIterator.FIRST_VERTEX, np.full(vertexes_count, _KunSolutionIterator.NO_MATCHING))
         self._kun_stack = deque([init_frame])
 
     def __next__(self) -> dict[int, int]:
@@ -56,7 +57,7 @@ class _KunSolutionIterator(Iterator):
         vertex = kun_frame.worker_index
         next_vertex = vertex + 1
 
-        vertexes_count = self._workers_count + self._tasks_count
+        vertexes_count = kun_frame.matching.shape[0]
         visited = np.full(vertexes_count, False)
 
         # Mark first vertrex as visited by default
