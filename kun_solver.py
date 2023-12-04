@@ -67,7 +67,7 @@ class _KunSolutionIterator(Iterator):
         dfs_stack = deque([init_frame])
 
         while dfs_stack:
-            dfs_frame = dfs_stack.pop()
+            dfs_frame = dfs_stack[-1]
 
             for neighbour_vertex in dfs_frame.neighbours_iter:
                 if visited[neighbour_vertex]:
@@ -80,8 +80,8 @@ class _KunSolutionIterator(Iterator):
                 if kun_frame.matching[neighbour_vertex] == _KunSolutionIterator.NO_MATCHING:
                     no_way_needed = False
 
-                    # Dfs stack does not contain vertex (kun_frame.worker_index), add it for path
-                    path = [vertex, *(frame.vertex_index for frame in dfs_stack)]
+                    # Dfs stack contains all path vertex at that moment
+                    path = [frame.vertex_index for frame in dfs_stack]
                     new_matching = _KunSolutionIterator.__build_matching(kun_frame.matching, path)
 
                     self._kun_stack.append(_KunStackFrame(next_vertex, new_matching))
@@ -94,6 +94,9 @@ class _KunSolutionIterator(Iterator):
 
                 # New dfs stack frame was set, return to the dfs loop
                 break
+            else:
+                # Remove dfs stack frame if all neighbours was viewed
+                _ = dfs_stack.pop()
 
         # Add no way frame, if no kun frames was added previous
         if no_way_needed:
