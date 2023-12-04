@@ -52,7 +52,7 @@ class _KunSolutionIterator(Iterator):
         raise StopIteration
 
     def __process_frame(self, kun_frame: _KunStackFrame) -> None:
-        no_way_needed = False
+        no_way_needed = True
 
         vertex = kun_frame.worker_index
         next_vertex = vertex + 1
@@ -78,7 +78,7 @@ class _KunSolutionIterator(Iterator):
 
                 # If we found not matching vertex
                 if kun_frame.matching[neighbour_vertex] == _KunSolutionIterator.NO_MATCHING:
-                    no_way_needed = True
+                    no_way_needed = False
 
                     # Dfs stack does not contain vertex (kun_frame.worker_index), add it for path
                     path = [vertex, *(frame.vertex_index for frame in dfs_stack)]
