@@ -1,7 +1,7 @@
 from collections import defaultdict, deque
 from dataclasses import dataclass
 from matrix_utils import min_indexes, reduce_each_min
-from typing import Iterable, Iterator
+from typing import Iterable, Iterator, Sequence
 import numpy as np
 
 
@@ -80,8 +80,8 @@ class _KunSolutionIterator(Iterator):
                 if kun_frame.matching[neighbour_vertex] == _KunSolutionIterator.NO_MATCHING:
                     no_way_needed = True
 
-                    # Dfs stack contains all path vertex at that moment
-                    path = dfs_stack
+                    # Dfs stack does not contain vertex (kun_frame.worker_index), add it for path
+                    path = [vertex, *(frame.vertex_index for frame in dfs_stack)]
                     new_matching = _KunSolutionIterator.__build_matching(kun_frame.matching, path)
 
                     self._kun_stack.append(_KunStackFrame(next_vertex, new_matching))
@@ -117,7 +117,7 @@ class _KunSolutionIterator(Iterator):
         raise NotImplementedError()
 
     @staticmethod
-    def __build_matching(matching: np.ndarray, path: deque[_DfsStackFrame]) -> np.ndarray:
+    def __build_matching(matching: np.ndarray, path: Sequence[int]) -> np.ndarray:
         raise NotImplementedError()
 
 
