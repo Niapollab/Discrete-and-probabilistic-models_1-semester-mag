@@ -74,26 +74,19 @@ class _KunSolutionIterator(Iterator):
                     continue
 
                 visited[neighbour_vertex] = True
-                dfs_stack.append(_DfsStackFrame(neighbour_vertex, iter(self._graph[neighbour_vertex])))
+                if kun_frame.matching[neighbour_vertex] != _KunSolutionIterator.NO_MATCHING:
+                    # Set new dfs stack frame and return to the dfs loop
+                    dfs_stack.append(_DfsStackFrame(neighbour_vertex, iter(self._graph[neighbour_vertex])))
+                    break
 
-                # If we found not matching vertex
-                if kun_frame.matching[neighbour_vertex] == _KunSolutionIterator.NO_MATCHING:
-                    no_way_needed = False
+                # We found not matching vertex
+                no_way_needed = False
 
-                    # Dfs stack contains all path vertex at that moment
-                    path = [frame.vertex_index for frame in dfs_stack]
-                    new_matching = _KunSolutionIterator.__build_matching(kun_frame.matching, path)
+                # Dfs stack contains all path vertex at that moment
+                path = [*(frame.vertex_index for frame in dfs_stack), neighbour_vertex]
+                new_matching = _KunSolutionIterator.__build_matching(kun_frame.matching, path)
 
-                    self._kun_stack.append(_KunStackFrame(next_vertex, new_matching))
-
-                    # Remove unnecessary last added stack frame (for micro-optimization purposes)
-                    _ = dfs_stack.pop()
-
-                    # Last dfs stack frame was popped and we need to check another neighbour in current frame
-                    continue
-
-                # New dfs stack frame was set, return to the dfs loop
-                break
+                self._kun_stack.append(_KunStackFrame(next_vertex, new_matching))
             else:
                 # Remove dfs stack frame if all neighbours was viewed
                 _ = dfs_stack.pop()
