@@ -24,12 +24,14 @@ class _KunSolutionIterator(Iterator):
 
     _workers_count: int
     _tasks_count: int
+    _answers_cache: set[str]
     _graph: dict[int, set[int]]
     _kun_stack: deque[_KunStackFrame]
 
     def __init__(self, matrix: np.ndarray) -> None:
         self._workers_count = matrix.shape[0]
         self._tasks_count = matrix.shape[1]
+        self._answers_cache = set()
 
         if self._workers_count != self._tasks_count:
             raise ValueError('Matrix must be square.')
@@ -46,6 +48,11 @@ class _KunSolutionIterator(Iterator):
 
             # Solution was found
             if frame.worker_index >= self._workers_count:
+                signature = ''.join(str(element) for element in frame.matching)
+                if signature in self._answers_cache:
+                    continue
+
+                self._answers_cache.add(signature)
                 return self.__build_solution(frame.matching)
 
             self.__process_frame(frame)
