@@ -14,11 +14,12 @@ class _BranchAndBoundStackFrame:
 
 def enumerate_matchings(matrix: np.ndarray) -> Iterable[MutableMapping[int, int]]:
     init_graph = _build_bipartite_graph(matrix)
+    workers_count = matrix.shape[0]
+
     init_matching = _find_max_matching(init_graph)
-
     max_matching_len = len(init_matching)
-    init_frame = _BranchAndBoundStackFrame(init_graph, init_matching, 0)
 
+    init_frame = _BranchAndBoundStackFrame(init_graph, init_matching, 0)
     stack = deque([init_frame])
     while stack:
         frame = stack.pop()
@@ -37,10 +38,15 @@ def enumerate_matchings(matrix: np.ndarray) -> Iterable[MutableMapping[int, int]
         matching_right = _find_max_matching(graph_right)
         if len(matching_right) >= max_matching_len:
             # Skip missing vertices in matching_right
-            while matching_index not in matching_right and matching_index < max_matching_len:
+            while (
+                matching_index not in matching_right
+                and matching_index < max_matching_len
+            ):
                 matching_index += 1
 
-            stack.append(_BranchAndBoundStackFrame(graph_right, matching_right, matching_index))
+            stack.append(
+                _BranchAndBoundStackFrame(graph_right, matching_right, matching_index)
+            )
 
         # Left branch. Include edge to the result matching
         graph_left = graph.copy()
@@ -53,18 +59,48 @@ def enumerate_matchings(matrix: np.ndarray) -> Iterable[MutableMapping[int, int]
             next_matching_index = matching_index + 1
 
             # Skip missing vertices in matching_left
-            while next_matching_index not in matching_left and next_matching_index < max_matching_len:
+            while (
+                next_matching_index not in matching_left
+                and next_matching_index < max_matching_len
+            ):
                 next_matching_index += 1
 
             if next_matching_index < max_matching_len:
-                stack.append(_BranchAndBoundStackFrame(graph_left, matching_left, next_matching_index))
+                stack.append(
+                    _BranchAndBoundStackFrame(
+                        graph_left, matching_left, next_matching_index
+                    )
+                )
             else:
                 # Return new answer
-                yield matching_left
+                yield {
+                    left_index: right_index - workers_count
+                    for left_index, right_index in matching_left.items()
+                }
 
 
 def _find_max_matching(graph: dict[int, set[int]]) -> dict[int, int]:
-    raise NotImplementedError()
+    matching = {}
+    visited = set()
+
+    def dfs(left_vertex: int) -> bool:
+        if left_vertex in visited:
+            return False
+
+        visited.add(left_vertex)
+
+        for right_vertex in graph[left_vertex]:
+            if right_vertex not in matching or dfs(matching[right_vertex]):
+                matching[right_vertex] = left_vertex
+                return True
+
+        return False
+
+    for left_vertex in graph:
+        visited.clear()
+        dfs(left_vertex)
+
+    return {left_index: right_index for right_index, left_index in matching.items()}
 
 
 def _build_bipartite_graph(matrix: np.ndarray) -> dict[int, set[int]]:
