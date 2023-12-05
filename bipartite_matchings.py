@@ -23,7 +23,9 @@ def enumerate_matchings(matrix: np.ndarray) -> Iterable[MutableMapping[int, int]
     init_matching = _find_max_matching(init_graph)
     max_matching_len = len(init_matching)
 
-    init_frame = _BranchAndBoundStackFrame(init_graph, init_matching, init_matching_index)
+    init_frame = _BranchAndBoundStackFrame(
+        init_graph, init_matching, init_matching_index
+    )
     stack = deque([init_frame])
     while stack:
         frame = stack.pop()
