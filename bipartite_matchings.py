@@ -13,13 +13,17 @@ class _BranchAndBoundStackFrame:
 
 
 def enumerate_matchings(matrix: np.ndarray) -> Iterable[MutableMapping[int, int]]:
-    init_graph = _build_bipartite_graph(matrix)
     workers_count = matrix.shape[0]
+    tasks_count = matrix.shape[1]
 
+    init_matching_index = workers_count
+    max_matching_index = workers_count + tasks_count
+
+    init_graph = _build_bipartite_graph(matrix)
     init_matching = _find_max_matching(init_graph)
     max_matching_len = len(init_matching)
 
-    init_frame = _BranchAndBoundStackFrame(init_graph, init_matching, 0)
+    init_frame = _BranchAndBoundStackFrame(init_graph, init_matching, init_matching_index)
     stack = deque([init_frame])
     while stack:
         frame = stack.pop()
@@ -27,8 +31,8 @@ def enumerate_matchings(matrix: np.ndarray) -> Iterable[MutableMapping[int, int]
 
         # Build branch and bound method's node
         matching_index = frame.matching_index
-        edge_from = matching_index
-        edge_to = frame.matching[edge_from]
+        edge_to = matching_index
+        edge_from = frame.matching[edge_to]
 
         # Right branch. Remove edge from the result matching
         graph_right = graph.copy()
@@ -40,7 +44,7 @@ def enumerate_matchings(matrix: np.ndarray) -> Iterable[MutableMapping[int, int]
             # Skip missing vertices in matching_right
             while (
                 matching_index not in matching_right
-                and matching_index < max_matching_len
+                and matching_index < max_matching_index
             ):
                 matching_index += 1
 
@@ -61,11 +65,11 @@ def enumerate_matchings(matrix: np.ndarray) -> Iterable[MutableMapping[int, int]
             # Skip missing vertices in matching_left
             while (
                 next_matching_index not in matching_left
-                and next_matching_index < max_matching_len
+                and next_matching_index < max_matching_index
             ):
                 next_matching_index += 1
 
-            if next_matching_index < max_matching_len:
+            if next_matching_index < max_matching_index:
                 stack.append(
                     _BranchAndBoundStackFrame(
                         graph_left, matching_left, next_matching_index
@@ -75,7 +79,7 @@ def enumerate_matchings(matrix: np.ndarray) -> Iterable[MutableMapping[int, int]
                 # Return new answer
                 yield {
                     left_index: right_index - workers_count
-                    for left_index, right_index in matching_left.items()
+                    for right_index, left_index in matching_left.items()
                 }
 
 
@@ -100,7 +104,7 @@ def _find_max_matching(graph: dict[int, set[int]]) -> dict[int, int]:
         visited.clear()
         dfs(left_vertex)
 
-    return {left_index: right_index for right_index, left_index in matching.items()}
+    return matching
 
 
 def _build_bipartite_graph(matrix: np.ndarray) -> dict[int, set[int]]:
