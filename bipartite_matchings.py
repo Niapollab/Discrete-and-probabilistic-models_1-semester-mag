@@ -1,7 +1,7 @@
 from collections import defaultdict, deque
 from dataclasses import dataclass
 from matrix_utils import min_indexes, reduce_each_min
-from typing import Iterable, MutableMapping
+from typing import AbstractSet, Iterable, Mapping, NamedTuple
 import numpy as np
 
 
@@ -12,7 +12,12 @@ class _BranchAndBoundStackFrame:
     matching_index: int
 
 
-def enumerate_matchings(matrix: np.ndarray) -> Iterable[MutableMapping[int, int]]:
+class MinVertexCover(NamedTuple):
+    l_minus: AbstractSet[int]
+    r_plus: AbstractSet[int]
+
+
+def enumerate_max_matchings(matrix: np.ndarray) -> Iterable[Mapping[int, int]]:
     workers_count = matrix.shape[0]
     tasks_count = matrix.shape[1]
 
@@ -83,6 +88,47 @@ def enumerate_matchings(matrix: np.ndarray) -> Iterable[MutableMapping[int, int]
                     left_index: right_index - workers_count
                     for right_index, left_index in matching_left.items()
                 }
+
+
+def find_min_vertex_cover(matrix: np.ndarray) -> MinVertexCover:
+    workers_count = matrix.shape[0]
+
+    graph = _build_bipartite_graph(matrix)
+    max_matching = _find_max_matching(graph)
+
+    # If matching is full than return L- only
+    left_side_vertices = {*range(workers_count)}
+    if len(max_matching) >= workers_count:
+        return MinVertexCover(left_side_vertices, set())
+
+    # Inverse matched edges
+    for right_index, left_index in max_matching.items():
+        graph[left_index].remove(right_index)
+        graph[right_index].add(left_index)
+
+    not_in_left_side = left_side_vertices - {*max_matching.values()}
+    visited = set()
+
+    def dfs(vertex: int) -> None:
+        if vertex in visited:
+            return
+
+        visited.add(vertex)
+
+        for neighbour in graph[vertex]:
+            dfs(neighbour)
+
+    # Run dfs for every not matched left_vertex
+    for left_vertex in not_in_left_side:
+        dfs(left_vertex)
+
+    # Add to answer not visited vertex from left side
+    l_minus = left_side_vertices - visited
+
+    # Add to answer not visited vertex from right side
+    r_plus = {vertex - workers_count for vertex in max_matching.keys() & visited}
+
+    return MinVertexCover(l_minus, r_plus)
 
 
 def _find_max_matching(graph: dict[int, set[int]]) -> dict[int, int]:
