@@ -48,3 +48,37 @@ def find_min_vertex_cover(matrix: np.ndarray) -> MinVertexCover:
     r_plus = {vertex - workers_count for vertex in max_matching.keys() & visited}
 
     return MinVertexCover(l_minus, r_plus)
+
+
+def reduce_by_min_vertex_cover(
+    matrix: np.ndarray, min_vertex_cover: MinVertexCover
+) -> np.ndarray:
+    not_crossed_left_iter = (
+        i for i in range(matrix.shape[0]) if i not in min_vertex_cover.l_minus
+    )
+    not_crossed_right_iter = (
+        j for j in range(matrix.shape[1]) if j not in min_vertex_cover.r_plus
+    )
+
+    # Find min non crossed value
+    min_not_crossed = None
+    for i in not_crossed_left_iter:
+        for j in not_crossed_right_iter:
+            if min_not_crossed is None or min_not_crossed > matrix[i][j]:
+                 min_not_crossed = matrix[i][j]
+
+    result = matrix.copy()
+
+    # No min_not_crossed found, return copy of original matrix
+    if min_not_crossed is None:
+        return result
+
+    result -= min_not_crossed
+
+    for i in min_vertex_cover.l_minus:
+        result[i] += min_not_crossed
+
+    for j in min_vertex_cover.r_plus:
+        result[:, j] += min_not_crossed
+
+    return result

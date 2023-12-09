@@ -1,14 +1,14 @@
 from bipartite.graph import build_bipartite_graph
 from collections import deque
 from dataclasses import dataclass
-from typing import Iterable, Mapping
+from typing import AbstractSet, Iterable, Mapping
 import numpy as np
 
 
 @dataclass(eq=True, frozen=True)
 class _BranchAndBoundStackFrame:
     graph: dict[int, set[int]]
-    matching: dict[int, int]
+    matching: Mapping[int, int]
     matching_index: int
 
 
@@ -85,7 +85,7 @@ def enumerate_max_matchings(matrix: np.ndarray) -> Iterable[Mapping[int, int]]:
                 }
 
 
-def find_max_matching(graph: dict[int, set[int]]) -> dict[int, int]:
+def find_max_matching(graph: Mapping[int, AbstractSet[int]]) -> Mapping[int, int]:
     matching = {}
     visited = set()
 
