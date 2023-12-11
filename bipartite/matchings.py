@@ -30,11 +30,27 @@ def enumerate_max_matchings(matrix: np.ndarray) -> Iterable[Mapping[int, int]]:
     while stack:
         frame = stack.pop()
         graph = frame.graph
+        matching = frame.matching
+        matching_index = frame.matching_index
+
+        # Skip missing vertices in matching
+        while (
+            matching_index not in matching
+            and matching_index < max_matching_index
+        ):
+            matching_index += 1
+
+        # Return new answer
+        if matching_index >= max_matching_index:
+            yield {
+                left_index: right_index - workers_count
+                for right_index, left_index in matching.items()
+            }
+            continue
 
         # Build branch and bound method's node
-        matching_index = frame.matching_index
         edge_to = matching_index
-        edge_from = frame.matching[edge_to]
+        edge_from = matching[edge_to]
 
         # Right branch. Remove edge from the result matching
         graph_right = graph.copy()
@@ -43,13 +59,6 @@ def enumerate_max_matchings(matrix: np.ndarray) -> Iterable[Mapping[int, int]]:
 
         matching_right = find_max_matching(graph_right)
         if len(matching_right) >= max_matching_len:
-            # Skip missing vertices in matching_right
-            while (
-                matching_index not in matching_right
-                and matching_index < max_matching_index
-            ):
-                matching_index += 1
-
             stack.append(
                 _BranchAndBoundStackFrame(graph_right, matching_right, matching_index)
             )
@@ -59,30 +68,15 @@ def enumerate_max_matchings(matrix: np.ndarray) -> Iterable[Mapping[int, int]]:
         graph_left[edge_from] = {edge_to}
 
         # Current edge wasn't removed. frame.matching == _find_max_matching(graph_left)
-        matching_left = frame.matching
-        if len(matching_left) >= max_matching_len:
-            # Move to the next matching_index, current in the answer
-            next_matching_index = matching_index + 1
+        matching_left = matching
 
-            # Skip missing vertices in matching_left
-            while (
-                next_matching_index not in matching_left
-                and next_matching_index < max_matching_index
-            ):
-                next_matching_index += 1
-
-            if next_matching_index < max_matching_index:
-                stack.append(
-                    _BranchAndBoundStackFrame(
-                        graph_left, matching_left, next_matching_index
-                    )
-                )
-            else:
-                # Return new answer
-                yield {
-                    left_index: right_index - workers_count
-                    for right_index, left_index in matching_left.items()
-                }
+        # Move to the next matching_index, current in the answer
+        next_matching_index = matching_index + 1
+        stack.append(
+            _BranchAndBoundStackFrame(
+                graph_left, matching_left, next_matching_index
+            )
+        )
 
 
 def find_max_matching(graph: Mapping[int, AbstractSet[int]]) -> Mapping[int, int]:
