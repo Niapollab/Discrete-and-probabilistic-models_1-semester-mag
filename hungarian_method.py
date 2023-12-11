@@ -11,18 +11,41 @@ import logging
 import numpy as np
 
 
+def enumerate_best_assignments_with_prohibitions(appointments: np.ndarray, prohibitions: np.ndarray, logger: logging.Logger | None = None) -> Iterable[Mapping[int, int]]:
+    _validate_prohibitions(prohibitions)
+    logger = logger or logging.getLogger('dummy')
+
+    appointments_workers_count = appointments.shape[0]
+    prohibitions_workers_count = prohibitions.shape[0]
+    if appointments_workers_count != prohibitions_workers_count:
+        raise ValueError('Appointments workers count must be equals to prohibitions.')
+
+    appointments_tasks_count = appointments.shape[1]
+    prohibitions_tasks_count = prohibitions.shape[1]
+    if appointments_tasks_count != prohibitions_tasks_count:
+        raise ValueError('Appointments tasks count must be equals to prohibitions.')
+
+    logger.info('Appointments matrix:\n%s', Lazy(lambda: matrix_to_string(appointments)))
+    logger.info('Prohibitions matrix:\n%s', Lazy(lambda: matrix_to_string(prohibitions)))
+
+    logger.info('Apply prohibitions to appointments')
+    max_fine = appointments.max() + 1
+    new_appointments = np.where(prohibitions, appointments, max_fine)
+
+    for solution in enumerate_best_assignments(new_appointments, logger):
+        yield solution
+
+
 def enumerate_best_assignments(
     appointments: np.ndarray, logger: logging.Logger | None = None
 ) -> Iterable[Mapping[int, int]]:
+    _validate_appointments(appointments)
+
     workers_count = appointments.shape[0]
     tasks_count = appointments.shape[1]
 
-    if tasks_count > workers_count:
-        raise ValueError('Task count must be less or equals to workers count.')
-
-    logger = logger or logging.getLogger('dummy')
-
     # Add dummy tasks
+    logger = logger or logging.getLogger('dummy')
     dummies = {*range(tasks_count, workers_count)}
     if dummies:
         logger.info('Current matrix:\n%s', Lazy(lambda: matrix_to_string(appointments)))
@@ -115,3 +138,36 @@ def _remove_dummies(
         for left_index, right_index in solution.items()
         if left_index not in dummies
     }
+
+
+def _validate_appointments(appointments: np.ndarray) -> None:
+    if appointments.dtype != int:
+        raise ValueError('Appointments matrix must be int matrix.')
+
+    if (appointments < 0).any():
+        raise ValueError('Appointments must be positive matrix.')
+
+    workers_count = appointments.shape[0]
+    tasks_count = appointments.shape[1]
+
+    if tasks_count > workers_count:
+        raise ValueError('Task count must be less or equals to workers count.')
+
+
+def _validate_prohibitions(prohibitions: np.ndarray) -> None:
+    if prohibitions.dtype != bool:
+        raise ValueError('Prohibitions matrix must be bool matrix.')
+
+    workers_availability = prohibitions.sum(axis=0)
+    if not workers_availability.all():
+        raise ValueError('Some workers unavailable.')
+
+    tasks_availability = prohibitions.sum(axis=1)
+    if not tasks_availability.all():
+        raise ValueError('Some tasks unavailable.')
+
+    workers_count = prohibitions.shape[0]
+    tasks_count = prohibitions.shape[1]
+
+    if tasks_count > workers_count:
+        raise ValueError('Task count must be less or equals to workers count.')
