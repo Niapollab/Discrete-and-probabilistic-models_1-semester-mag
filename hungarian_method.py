@@ -29,7 +29,7 @@ def enumerate_best_assignments_with_prohibitions(appointments: np.ndarray, prohi
     logger.info('Prohibitions matrix:\n%s', Lazy(lambda: matrix_to_string(prohibitions.astype(int))))
 
     logger.info('Apply prohibitions to appointments')
-    max_fine = appointments.max() + 1
+    max_fine = (appointments.max() * appointments_workers_count) + 1
     new_appointments = np.where(prohibitions, appointments, max_fine)
 
     for solution in enumerate_best_assignments(new_appointments, logger):
