@@ -26,7 +26,7 @@ def enumerate_best_assignments_with_prohibitions(appointments: np.ndarray, prohi
         raise ValueError('Appointments tasks count must be equals to prohibitions.')
 
     logger.info('Appointments matrix:\n%s', Lazy(lambda: matrix_to_string(appointments)))
-    logger.info('Prohibitions matrix:\n%s', Lazy(lambda: matrix_to_string(prohibitions)))
+    logger.info('Prohibitions matrix:\n%s', Lazy(lambda: matrix_to_string(prohibitions.astype(int))))
 
     logger.info('Apply prohibitions to appointments')
     max_fine = appointments.max() + 1
@@ -92,12 +92,12 @@ def enumerate_best_assignments(
 
         solution = _remove_dummies(solution, dummies)
         yield solution
-        logger.info('Solution:\n%s', _log_solution(solution))
+        logger.debug('Solution:\n%s', _log_solution(solution))
 
         for solution in solutions:
             solution = _remove_dummies(solution, dummies)
             yield solution
-            logger.info('Solution:\n%s', _log_solution(solution))
+            logger.debug('Solution:\n%s', _log_solution(solution))
 
         break
 

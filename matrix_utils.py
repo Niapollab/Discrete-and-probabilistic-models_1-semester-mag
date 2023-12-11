@@ -25,7 +25,7 @@ def read_matrix(
     return np.array(rows)
 
 
-def random_matrix(rows: int, columns: int, min: int, max: int) -> np.ndarray:
+def generate_random_matrix(rows: int, columns: int, min: int, max: int) -> np.ndarray:
     return np.array(
         [[rnd.randint(min, max) for _ in range(columns)] for _ in range(rows)]
     )
