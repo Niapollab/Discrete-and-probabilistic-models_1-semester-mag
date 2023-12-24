@@ -20,7 +20,7 @@ def enumerate_max_matchings(matrix: np.ndarray) -> Iterable[Mapping[int, int]]:
     max_matching_index = workers_count + tasks_count
 
     init_graph = build_bipartite_graph(matrix)
-    init_matching = find_max_matching(init_graph)
+    init_matching = _find_max_matching(init_graph)
     max_matching_len = len(init_matching)
 
     init_frame = _BranchAndBoundStackFrame(
@@ -57,7 +57,7 @@ def enumerate_max_matchings(matrix: np.ndarray) -> Iterable[Mapping[int, int]]:
         graph_right[edge_from] = graph_right[edge_from].copy()
         graph_right[edge_from].remove(edge_to)
 
-        matching_right = find_max_matching(graph_right)
+        matching_right = _find_max_matching(graph_right)
         if len(matching_right) >= max_matching_len:
             stack.append(
                 _BranchAndBoundStackFrame(graph_right, matching_right, matching_index)
@@ -79,7 +79,7 @@ def enumerate_max_matchings(matrix: np.ndarray) -> Iterable[Mapping[int, int]]:
         )
 
 
-def find_max_matching(graph: Mapping[int, AbstractSet[int]]) -> Mapping[int, int]:
+def _find_max_matching(graph: Mapping[int, AbstractSet[int]]) -> Mapping[int, int]:
     matching = {}
     visited = set()
 

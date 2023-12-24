@@ -1,5 +1,5 @@
 from bipartite.graph import build_bipartite_graph
-from bipartite.matchings import find_max_matching
+from bipartite.matchings import _find_max_matching
 from typing import AbstractSet, NamedTuple
 import numpy as np
 
@@ -13,7 +13,7 @@ def find_min_vertex_cover(matrix: np.ndarray) -> MinVertexCover:
     workers_count = matrix.shape[0]
 
     graph = build_bipartite_graph(matrix)
-    max_matching = find_max_matching(graph)
+    max_matching = _find_max_matching(graph)
 
     # If matching is full than return L- only
     left_side_vertices = {*range(workers_count)}
